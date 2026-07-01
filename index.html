@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>I &mdash; Lirpa Entertainment (1994)</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div id="frame">
+    <canvas id="screen" width="320" height="200"></canvas>
+
+    <!-- Photosensitivity / boot warning modal -->
+    <div id="warn" class="overlay">
+      <div class="panel">
+        <h1>I</h1>
+        <p class="sub">LIRPA ENTERTAINMENT &middot; MCMXCIV</p>
+        <p>This is a reconstruction of a game that, per the people who remember it,
+           never quite existed. It contains flashing sequences, sudden sounds and
+           deliberate confusion &mdash; all part of <em>the experience</em>.</p>
+        <label class="chk"><input type="checkbox" id="reduceFlash" /> Reduce flashing &amp; screen-shake (recommended)</label>
+        <label class="chk"><input type="checkbox" id="muteAudio" /> Start muted</label>
+        <button id="startBtn">INSERT CD &amp; BOOT</button>
+        <p class="tiny">Headphones encouraged. Keyboard required. It is, after all, 1994.</p>
+      </div>
+    </div>
+
+    <!-- Tiny persistent control bar -->
+    <div id="bar">
+      <button data-act="mute" title="Mute (M)">&#9834;</button>
+      <button data-act="flash" title="Toggle reduced flashing">&#9888;</button>
+      <button data-act="full" title="Fullscreen (F)">&#9974;</button>
+      <span id="hint"></span>
+    </div>
+  </div>
+
+  <script src="js/engine.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/art.js"></script>
+  <script src="js/raycaster.js"></script>
+  <script src="js/scenes.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
