@@ -156,39 +156,42 @@ Scenes.title = {
   enter() { this.t = 0; this.hot = null; S.playSong('title'); this.blink = 0; },
   update(dt) {
     this.t += dt; this.blink += dt;
-    // hot-spots from last paint
+    // hot-spots from last paint: sun (fate), left half (sand), right half (steel)
     const hs = this._hs;
     this.hot = null;
     if (hs) {
-      if (U.dist(E.mouse.x, E.mouse.y, hs.sun.x, hs.sun.y) < hs.sun.r) this.hot = 'sun';
-      else if (U.dist(E.mouse.x, E.mouse.y, hs.fig.x, hs.fig.y) < hs.fig.r) this.hot = 'fig';
+      if (U.dist(E.mouse.x, E.mouse.y, hs.sun.x, hs.sun.y) < hs.sun.r + 3) this.hot = 'sun';
+      else if (U.dist(E.mouse.x, E.mouse.y, hs.cx, hs.cy) < hs.R)
+        this.hot = E.mouse.x < hs.cx ? 'fantasy' : 'cyber';
     }
     document.getElementById('hint').textContent =
-      this.hot === 'sun' ? 'Hover the sun → a beginning in the sand…'
-      : this.hot === 'fig' ? 'Hover the figure → a beginning in steel…'
-      : 'There are many beginnings. Choose where I awakens.';
+      this.hot === 'sun' ? 'The sun-eye: let fate pick a beginning.'
+      : this.hot === 'fantasy' ? 'Left: a beginning in the sand.'
+      : this.hot === 'cyber' ? 'Right: a beginning in steel.'
+      : 'Many beginnings. Click a half, or the sun.';
 
-    const chooseSun = (this.hot === 'sun' && E.mouse.clicked) || E.hitAny('Digit2', 'ArrowRight');
-    const chooseFig = (this.hot === 'fig' && E.mouse.clicked) || E.hitAny('Digit1', 'ArrowLeft');
-    if (chooseSun) { S.sfx('select'); GAME.reset(); GAME.begin = 'fantasy'; E.setScene(Scenes.fantasyIntro); }
-    else if (chooseFig) { S.sfx('select'); GAME.reset(); GAME.begin = 'cyber'; E.setScene(Scenes.chase); }
-    if (E.hitAny('KeyR')) { S.sfx('select'); GAME.reset(); GAME.begin = U.pick(['cyber', 'fantasy']); E.setScene(GAME.begin === 'cyber' ? Scenes.chase : Scenes.fantasyIntro); }
+    const chooseFan = (this.hot === 'fantasy' && E.mouse.clicked) || E.hitAny('Digit1', 'ArrowLeft');
+    const chooseCyb = (this.hot === 'cyber' && E.mouse.clicked) || E.hitAny('Digit2', 'ArrowRight');
+    const chooseSun = (this.hot === 'sun' && E.mouse.clicked) || E.hitAny('KeyR', 'Space');
+    const goFan = () => { S.sfx('select'); GAME.reset(); GAME.begin = 'fantasy'; E.setScene(Scenes.fantasyIntro); };
+    const goCyb = () => { S.sfx('select'); GAME.reset(); GAME.begin = 'cyber'; E.setScene(Scenes.chase); };
+    if (chooseSun) { S.sfx('select'); (U.pick(['f', 'c']) === 'f' ? goFan : goCyb)(); }
+    else if (chooseFan) goFan();
+    else if (chooseCyb) goCyb();
     if (E.hitAny('KeyA')) E.setScene(Scenes.about);
   },
   render() {
     const ctx = E.ctx;
-    this._hs = A.paintTitle(ctx, this.t, this.hot === 'sun', this.hot === 'fig');
-    // logo "I" — tall serif slab, sun glints on it
-    ctx.save();
-    E.text(150, 18, 'I', '#000', 6);          // shadow
-    E.text(148, 16, 'I', '#eafcff', 6);
-    ctx.restore();
-    E.textS(96, 78, 'LIRPA ENTERTAINMENT', '#bfe', 1, '#012');
-    // subtitle reflecting the lore
+    this._hs = A.paintTitle(ctx, this.t, this.hot);
+    // title text over the top of the arch
+    E.textCS(E.W / 2, 4, 'LIRPA  ENTERTAINMENT', '#e7dcc2', 1, '#000');
+    // the game's name, small and central like a maker's mark under the sun
+    E.textS(6, 6, 'I', '#eafcff', 2, '#000');
+    E.textS(E.W - 46, 6, 'MCMXCIV', '#e7dcc2', 1, '#000');
+    // prompts in the dark band below the arch
     if (Math.sin(this.blink * 2) > -0.3)
-      E.textC(E.W / 2, 178, 'CLICK THE SUN  OR  THE FIGURE', '#7df0ff', 1);
-    E.text(6, 188, 'R RANDOM   A ABOUT', '#69a', 1);
-    E.textS(E.W - 92, 6, 'MCMXCIV', '#9cf', 1, '#000');
+      E.textCS(E.W / 2, E.H - 15, 'CLICK LEFT: SAND    RIGHT: STEEL', '#ffe08a', 1, '#000');
+    E.textCS(E.W / 2, E.H - 7, 'SUN / SPACE: FATE    A: ABOUT', '#9cc', 1, '#000');
   }
 };
 

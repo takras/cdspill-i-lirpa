@@ -261,6 +261,10 @@ E.textS = function (x, y, str, col, scale, shadow) {
   E.text(x + (scale || 1), y + (scale || 1), str, shadow || '#000', scale);
   E.text(x, y, str, col, scale);
 };
+// centred + drop-shadow
+E.textCS = function (cx, y, str, col, scale, shadow) {
+  E.textS(cx - E.textW(str, scale) / 2, y, str, col, scale, shadow);
+};
 
 /* ---------- small util ---------- */
 const U = {

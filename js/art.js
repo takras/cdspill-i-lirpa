@@ -307,64 +307,139 @@ A.makeTex = function (size, fn) {
   return c;
 };
 
-/* ---------------- TITLE-SCREEN PAINTERS ---------------- */
-// Cyberpunk skyline with the low sun upper-left. tHover: 0..1 sun glow boost.
-A.paintTitle = function (ctx, t, sunHover, figHover) {
-  // sky gradient (dusk over steel)
-  const g = ctx.createLinearGradient(0, 0, 0, 130);
-  g.addColorStop(0, '#1a2740'); g.addColorStop(0.5, '#3a2b4a'); g.addColorStop(1, '#6a3a50');
-  ctx.fillStyle = g; ctx.fillRect(0, 0, 320, 130);
+/* ---------------- TITLE-SCREEN PAINTER ----------------
+   A circular "look through the stone tunnel": split down the middle —
+   sand/fantasy (left) vs steel/cyber (right) — with the sun-eye and the
+   descending beam at the centre. Modelled on the illustrator's watercolour.
+   hot ∈ null | 'fantasy' | 'cyber' | 'sun'  (for hover highlight)        */
+A.paintTitle = function (ctx, t, hot) {
+  const cx = 160, cy = 86, R = 82, ringOut = 96;
+  const cos = Math.cos, sin = Math.sin, TAU = Math.PI * 2;
 
-  // the sun (upper-left), choice hot-spot for the FANTASY beginning
-  const sx = 54, sy = 40, baseR = 22 + (sunHover ? 4 : 0);
-  for (let i = 6; i >= 0; i--) {
-    const a = 0.06 + (sunHover ? 0.05 : 0);
-    ctx.fillStyle = `rgba(255,200,90,${a})`;
-    ctx.beginPath(); ctx.arc(sx, sy, baseR + i * 6, 0, 7); ctx.fill();
-  }
-  const sg = ctx.createRadialGradient(sx - 4, sy - 4, 2, sx, sy, baseR);
-  sg.addColorStop(0, '#fff6cf'); sg.addColorStop(0.6, '#ffd24a'); sg.addColorStop(1, '#ff8a2a');
-  ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(sx, sy, baseR, 0, 7); ctx.fill();
-  // sun reflecting down the city
-  ctx.fillStyle = 'rgba(255,180,80,0.06)'; ctx.fillRect(0, 0, 320, 130);
+  // dark stone/shadow backdrop (the corners)
+  ctx.fillStyle = '#0b0a0d'; ctx.fillRect(0, 0, 320, 200);
 
-  // skyline silhouettes (parallax-ish, static)
-  const towers = [
-    [10, 70, 26, 60], [40, 84, 18, 46], [64, 58, 30, 72], [100, 78, 22, 52],
-    [128, 66, 26, 64], [160, 86, 20, 44], [184, 54, 34, 76], [224, 72, 24, 58],
-    [252, 84, 18, 46], [276, 60, 30, 70],
-  ];
-  for (const [x, y, w, h] of towers) {
-    ctx.fillStyle = '#101622'; ctx.fillRect(x, y, w, h);
-    ctx.fillStyle = '#0a0e16'; ctx.fillRect(x, y, 2, h);
-    // windows, some flicker
-    for (let wy = y + 4; wy < y + h - 2; wy += 6)
-      for (let wx = x + 3; wx < x + w - 2; wx += 5) {
-        const lit = ((wx * 13 + wy * 7) % 9 < 4);
-        const fl = lit && (Math.sin(t * 3 + wx + wy) > 0.7);
-        ctx.fillStyle = fl ? '#ffe98a' : (lit ? '#3a86c0' : '#0c1018');
-        ctx.fillRect(wx, wy, 2, 3);
+  // ---- scene inside the round opening ----
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.clip();
+
+  // LEFT: sand / fantasy (blue sky, orange peaks, green)
+  ctx.save();
+  ctx.beginPath(); ctx.rect(0, 0, cx, 200); ctx.clip();
+  let g = ctx.createLinearGradient(0, cy - R, 0, cy + R);
+  g.addColorStop(0, '#3f86c4'); g.addColorStop(0.55, '#8ec5e8'); g.addColorStop(1, '#d7e9cf');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, cx, 200);
+  // rolling green field
+  ctx.fillStyle = '#3a9a45';
+  ctx.beginPath(); ctx.moveTo(0, 150);
+  for (let x = 0; x <= cx; x += 12) ctx.lineTo(x, 150 - sin(x * 0.05) * 6);
+  ctx.lineTo(cx, 200); ctx.lineTo(0, 200); ctx.fill();
+  // orange jagged mountains
+  ctx.fillStyle = '#c9772e';
+  ctx.beginPath(); ctx.moveTo(0, 168);
+  ctx.lineTo(0, 128); ctx.lineTo(24, 150); ctx.lineTo(46, 96);
+  ctx.lineTo(70, 138); ctx.lineTo(96, 108); ctx.lineTo(122, 150); ctx.lineTo(cx, 152);
+  ctx.lineTo(cx, 168); ctx.closePath(); ctx.fill();
+  // sunlit / shadow faces
+  ctx.fillStyle = '#e39a4a';
+  ctx.beginPath(); ctx.moveTo(46, 96); ctx.lineTo(70, 138); ctx.lineTo(58, 138); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#9a5622';
+  ctx.beginPath(); ctx.moveTo(96, 108); ctx.lineTo(122, 150); ctx.lineTo(96, 150); ctx.closePath(); ctx.fill();
+  // little green thicket at the base
+  ctx.fillStyle = '#2f8f3a';
+  ctx.beginPath(); ctx.ellipse(30, 152, 15, 8, 0, 0, TAU); ctx.fill();
+  ctx.restore();
+
+  // RIGHT: steel / cyber (purple sky, buildings, portal, palm)
+  ctx.save();
+  ctx.beginPath(); ctx.rect(cx, 0, 320 - cx, 200); ctx.clip();
+  g = ctx.createLinearGradient(0, cy - R, 0, cy + R);
+  g.addColorStop(0, '#3a2450'); g.addColorStop(0.55, '#6b3a63'); g.addColorStop(1, '#9a5a4a');
+  ctx.fillStyle = g; ctx.fillRect(cx, 0, 320 - cx, 200);
+  // buildings (steel-brown blocks)
+  const bld = [[188, 96, 22, 80], [206, 70, 30, 108], [234, 104, 22, 74], [186, 128, 66, 50]];
+  for (let i = 0; i < bld.length; i++) {
+    const [bx, by, bw, bh] = bld[i];
+    ctx.fillStyle = i % 2 ? '#7a6a5a' : '#8c7c6a';
+    ctx.fillRect(bx, by, bw, bh);
+    ctx.fillStyle = 'rgba(0,0,0,0.22)'; ctx.fillRect(bx, by, 3, bh);      // shaded edge
+    for (let wy = by + 6; wy < by + bh - 4; wy += 10)
+      for (let wx = bx + 5; wx < bx + bw - 4; wx += 9) {
+        const lit = ((wx * 7 + wy * 5) % 8 < 3);
+        const fl = lit && sin(t * 3 + wx + wy) > 0.6;
+        ctx.fillStyle = fl ? '#ffe98a' : (lit ? '#d8c060' : '#2a2018');
+        ctx.fillRect(wx, wy, 4, 5);
       }
   }
-  // ground / street
-  ctx.fillStyle = '#0a0c12'; ctx.fillRect(0, 128, 320, 72);
-  for (let x = -((t * 30) % 24); x < 320; x += 24) {
-    ctx.strokeStyle = 'rgba(61,240,255,0.18)'; ctx.beginPath();
-    ctx.moveTo(160, 130); ctx.lineTo(x, 200); ctx.stroke();
+  // the dark round portal (a tunnel mouth) lower-right
+  ctx.fillStyle = '#0c0a12';
+  ctx.beginPath(); ctx.ellipse(236, 150, 20, 26, 0, 0, TAU); ctx.fill();
+  ctx.strokeStyle = '#6a6152'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.ellipse(236, 150, 20, 26, 0, 0, TAU); ctx.stroke();
+  // a small palm plant
+  ctx.strokeStyle = '#2f8f3a'; ctx.lineWidth = 2;
+  for (let k = -3; k <= 3; k++) {
+    ctx.beginPath(); ctx.moveTo(210, 168);
+    ctx.quadraticCurveTo(210 + k * 5, 150, 210 + k * 9, 148 + Math.abs(k) * 2); ctx.stroke();
   }
-  ctx.strokeStyle = 'rgba(61,240,255,0.10)';
-  for (let i = 1; i < 6; i++) { const yy = 130 + i * i * 2.2; ctx.beginPath(); ctx.moveTo(0, yy); ctx.lineTo(320, yy); ctx.stroke(); }
 
-  // the lone figure standing in the street — the "I" / choice hot-spot for CYBER
-  const fx = 198, fy = 150;
-  ctx.fillStyle = figHover ? '#7df0ff' : '#0c1018';
-  // simple long-coat silhouette
-  ctx.fillRect(fx - 4, fy - 18, 8, 20);
-  ctx.fillRect(fx - 5, fy - 8, 10, 16);
-  ctx.fillRect(fx - 3, fy - 24, 6, 7);
-  if (figHover) { ctx.fillStyle = 'rgba(125,240,255,0.25)'; ctx.fillRect(fx - 8, fy - 26, 16, 30); }
-  // neon reflection
-  ctx.fillStyle = 'rgba(125,240,255,0.10)'; ctx.fillRect(fx - 5, fy + 2, 10, 12);
+  ctx.restore();
 
-  return { sun: { x: sx, y: sy, r: baseR + 10 }, fig: { x: fx, y: fy - 12, r: 16 } };
+  // central descending BEAM (the seed / the light)
+  const bTop = cy + 14, bBot = cy + R;
+  g = ctx.createLinearGradient(0, bTop, 0, bBot);
+  g.addColorStop(0, 'rgba(255,224,90,0.95)'); g.addColorStop(1, 'rgba(255,196,60,0)');
+  ctx.fillStyle = g;
+  const flick = 1 + sin(t * 8) * 0.15;
+  ctx.beginPath();
+  ctx.moveTo(cx - 3, bTop); ctx.lineTo(cx + 3, bTop);
+  ctx.lineTo(cx + 11 * flick, bBot); ctx.lineTo(cx - 11 * flick, bBot); ctx.closePath(); ctx.fill();
+
+  // the SUN / EYE at the centre
+  const sr = 27 + (hot === 'sun' ? 3 : 0) + sin(t * 2) * 1.5;
+  for (let i = 6; i >= 0; i--) {                     // outer glow
+    ctx.fillStyle = `rgba(255,210,90,${0.05 + (hot === 'sun' ? 0.035 : 0)})`;
+    ctx.beginPath(); ctx.arc(cx, cy, sr + i * 7, 0, TAU); ctx.fill();
+  }
+  ctx.strokeStyle = 'rgba(255,180,40,0.35)'; ctx.lineWidth = 2;  // petals/rays
+  for (let a = 0; a < 20; a++) {
+    const an = a / 20 * TAU + t * 0.05;
+    ctx.beginPath();
+    ctx.moveTo(cx + cos(an) * sr * 0.92, cy + sin(an) * sr * 0.92);
+    ctx.lineTo(cx + cos(an) * (sr + 7), cy + sin(an) * (sr + 7)); ctx.stroke();
+  }
+  const sg = ctx.createRadialGradient(cx, cy, 2, cx, cy, sr);
+  sg.addColorStop(0, '#180300'); sg.addColorStop(0.20, '#3a0800');
+  sg.addColorStop(0.34, '#a51e08'); sg.addColorStop(0.55, '#e8681a');
+  sg.addColorStop(0.78, '#ffc21e'); sg.addColorStop(1, '#fff2a6');
+  ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(cx, cy, sr, 0, TAU); ctx.fill();
+  ctx.fillStyle = '#120200'; ctx.beginPath(); ctx.arc(cx, cy, sr * 0.16, 0, TAU); ctx.fill();  // pupil
+
+  // hover highlight on the chosen half
+  if (hot === 'fantasy') { ctx.fillStyle = 'rgba(255,255,255,0.10)'; ctx.fillRect(0, 0, cx, 200); }
+  if (hot === 'cyber') { ctx.fillStyle = 'rgba(255,255,255,0.10)'; ctx.fillRect(cx, 0, 320 - cx, 200); }
+
+  ctx.restore();   // end round clip
+
+  // ---- STONE ARCH RING (voussoirs) ----
+  const segs = 30;
+  for (let a = 0; a < segs; a++) {
+    const a0 = a / segs * TAU, a1 = (a + 1) / segs * TAU;
+    const sh = 132 + ((a * 41) % 46) - 23;
+    ctx.fillStyle = `rgb(${sh},${sh - 6},${sh - 16})`;
+    ctx.beginPath();
+    ctx.moveTo(cx + cos(a0) * R, cy + sin(a0) * R);
+    ctx.lineTo(cx + cos(a0) * ringOut, cy + sin(a0) * ringOut);
+    ctx.lineTo(cx + cos(a1) * ringOut, cy + sin(a1) * ringOut);
+    ctx.lineTo(cx + cos(a1) * R, cy + sin(a1) * R);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(48,44,38,0.85)'; ctx.lineWidth = 1; ctx.stroke();
+  }
+  // rims
+  ctx.lineWidth = 2; ctx.strokeStyle = '#2f2b25';
+  ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.stroke();
+  ctx.strokeStyle = '#c3bdac';
+  ctx.beginPath(); ctx.arc(cx, cy, ringOut, 0, TAU); ctx.stroke();
+
+  return { cx, cy, R, sun: { x: cx, y: cy, r: sr } };
 };
